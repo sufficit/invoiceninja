@@ -13,6 +13,7 @@
 namespace App\Http\Controllers;
 
 use App\Libraries\MultiDB;
+use App\Models\Company;
 use App\Models\CompanyGateway;
 use App\Models\User;
 use App\PaymentDrivers\WePayPaymentDriver;
@@ -23,31 +24,23 @@ use Illuminate\Support\Facades\Cache;
 class WePayController extends BaseController
 {
     use MakesHash;
+    
     /**
      * Initialize WePay Signup.
      */
     public function signup(string $token)
     {
 
-        // $hash = [
-        //     'user_id' => auth()->user()->id,
-        //     'company_key'=> auth()->user()->company()->company_key,
-        //     'context' => $request->input('context'),
-        // ];
-
         $hash = Cache::get($token);
 
-        //temporarily comment this out
-        // if(!$hash)
-        //     abort(400, 'Link expired');
-        // MultiDB::findAndSetDbByCompanyKey($hash['company_key']);
-        // $data['user_id'] = $this->encodePrimaryKey($hash['user_id']);
-        // $data['company_key'] = $hash['company_key'];
+        MultiDB::findAndSetDbByCompanyKey($hash['company_key']);
 
-        $user = User::first();
+        $user = User::findOrFail($hash['user_id']);
+
+        $company = Company::where('company_key', $hash['company_key'])->firstOrFail();
+
         $data['user_id'] = $user->id;
-
-        $data['company_key'] = $user->account->companies()->first()->company_key;
+        $data['company'] = $company;
 
         $wepay_driver = new WePayPaymentDriver(new CompanyGateway, null, null);
 
@@ -55,8 +48,8 @@ class WePayController extends BaseController
 
     }
 
-    public function processSignup(Request $request)
+    public function finished()
     {
-
+        return render('gateways.wepay.signup.finished');
     }
 }
