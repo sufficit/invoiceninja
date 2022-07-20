@@ -2247,7 +2247,7 @@ $LANG = array(
     'navigation_variables' => 'Navigation Variables',
     'custom_variables' => 'Custom Variables',
     'invalid_file' => 'Invalid file type',
-    'add_documents_to_invoice' => 'Add documents to invoice',
+    'add_documents_to_invoice' => 'Add Documents to Invoice',
     'mark_expense_paid' => 'Mark paid',
     'white_label_license_error' => 'Failed to validate the license, check storage/logs/laravel-error.log for more details.',
     'plan_price' => 'Plan Price',
@@ -4712,6 +4712,10 @@ $LANG = array(
     'view_map' => 'View Map',
     'set_default_design' => 'Set Default Design',
     'add_gateway_help_message' => 'Add a payment gateway (ie. Stripe, WePay or PayPal) to accept online payments',
+    'purchase_order_issued_to' => 'Purchase Order issued to',
+    'archive_task_status' => 'Archive Task Status',
+    'delete_task_status' => 'Delete Task Status',
+    'restore_task_status' => 'Restore Task Status',
 );
 
 return $LANG;
