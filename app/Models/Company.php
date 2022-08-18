@@ -119,6 +119,7 @@ class Company extends BaseModel
         'track_inventory',
         'inventory_notification_threshold',
         'stock_notification',
+        'enabled_expense_tax_rates',
     ];
 
     protected $hidden = [
@@ -340,8 +341,21 @@ class Company extends BaseModel
      */
     public function country()
     {
+        $companies = Cache::get('countries');
+
+        if (! $companies) {
+            $this->buildCache(true);
+
+            $companies = Cache::get('countries');
+
+        }
+
+        return $companies->filter(function ($item) {
+            return $item->id == $this->getSetting('country_id');
+        })->first();
+
 //        return $this->belongsTo(Country::class);
-        return Country::find($this->settings->country_id);
+        // return Country::find($this->settings->country_id);
     }
 
     public function group_settings()
@@ -391,15 +405,21 @@ class Company extends BaseModel
     {
         $languages = Cache::get('languages');
 
+        //build cache and reinit
         if (! $languages) {
             $this->buildCache(true);
+            $languages = Cache::get('languages');
         }
+
+        //if the cache is still dead, get from DB
+        if(!$languages && property_exists($this->settings, 'language_id'))
+            return Language::find($this->settings->language_id);
 
         return $languages->filter(function ($item) {
             return $item->id == $this->settings->language_id;
         })->first();
 
-        // return Language::find($this->settings->language_id);
+        
     }
 
     public function getLocale()
@@ -505,7 +525,7 @@ class Company extends BaseModel
 
     public function owner()
     {
-        return $this->company_users()->withTrashed()->where('is_owner', true)->first()->user;
+        return $this->company_users()->withTrashed()->where('is_owner', true)->first()?->user;
     }
 
     public function resolveRouteBinding($value, $field = null)

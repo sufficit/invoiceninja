@@ -12,6 +12,7 @@
 namespace App\Mail;
 
 use App\Jobs\Invoice\CreateUbl;
+use App\Jobs\Vendor\CreatePurchaseOrderPdf;
 use App\Models\Account;
 use App\Models\Client;
 use App\Models\User;
@@ -24,6 +25,7 @@ use App\Utils\VendorHtmlEngine;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Storage;
 
 class VendorTemplateEmail extends Mailable
 {
@@ -107,22 +109,40 @@ class VendorTemplateEmail extends Mailable
                 'company' => $this->company,
                 'whitelabel' => $this->vendor->user->account->isPaid() ? true : false,
                 'logo' => $this->company->present()->logo($settings),
-            ])
-            ->withSymfonyMessage(function ($message) {
-                $message->getHeaders()->addTextHeader('Tag', $this->company->company_key);
-                $message->invitation = $this->invitation;
-            });
+            ]);
+            //->withSymfonyMessage(function ($message) {
+            //    $message->getHeaders()->addTextHeader('Tag', $this->company->company_key);
+            //    $message->invitation = $this->invitation;
+            //});
+            // ->tag($this->company->company_key);
 
-        /*In the hosted platform we need to slow things down a little for Storage to catch up.*/
-        if (Ninja::isHosted()) {
+        if(Ninja::isHosted() && $this->invitation){
+
+            $path = false;
+
+            if($this->invitation->purchase_order)
+                $path = $this->vendor->purchase_order_filepath($this->invitation).$this->invitation->purchase_order->numberFormatter().'.pdf';
+
             sleep(1);
+
+            if($path && !Storage::disk(config('filesystems.default'))->exists($path)){
+
+                sleep(2);
+
+                if(!Storage::disk(config('filesystems.default'))->exists($path)) {
+                    (new CreatePurchaseOrderPdf($this->invitation))->handle();
+                    sleep(2);
+                }
+
+            }
+
         }
 
         foreach ($this->build_email->getAttachments() as $file) {
             if (is_string($file)) {
                 $this->attach($file);
             } elseif (is_array($file)) {
-                $this->attach($file['path'], ['as' => $file['name'], 'mime' => $file['mime']]);
+                $this->attach($file['path'], ['as' => $file['name'], 'mime' => null]);
             }
         }
 

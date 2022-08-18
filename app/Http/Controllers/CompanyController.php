@@ -212,8 +212,8 @@ class CompanyController extends BaseController
         $this->forced_includes = ['company_user'];
 
         $company = (new CreateCompany($request->all(), auth()->user()->company()->account))->handle();
-        CreateCompanyPaymentTerms::dispatchSync($company, auth()->user());
-        CreateCompanyTaskStatuses::dispatchSync($company, auth()->user());
+        (new CreateCompanyPaymentTerms($company, auth()->user()))->handle();
+        (new CreateCompanyTaskStatuses($company, auth()->user()))->handle();
 
         $company = $this->company_repo->save($request->all(), $company);
 
@@ -520,7 +520,7 @@ class CompanyController extends BaseController
             $nmo->company = $other_company;
             $nmo->settings = $other_company->settings;
             $nmo->to_user = auth()->user();
-            NinjaMailerJob::dispatch($nmo);
+            NinjaMailerJob::dispatch($nmo, true);
 
             $company->delete();
 

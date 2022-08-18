@@ -14,8 +14,8 @@ return [
     'require_https' => env('REQUIRE_HTTPS', true),
     'app_url' => rtrim(env('APP_URL', ''), '/'),
     'app_domain' => env('APP_DOMAIN', 'invoicing.co'),
-    'app_version' => '5.5.2',
-    'app_tag' => '5.5.2',
+    'app_version' => '5.5.11',
+    'app_tag' => '5.5.11',
     'minimum_client_version' => '5.0.16',
     'terms_version' => '1.0.1',
     'api_secret' => env('API_SECRET', ''),
@@ -197,4 +197,8 @@ return [
     'ninja_apple_client_id' => env('APPLE_CLIENT_ID', false),
     'ninja_apple_client_secret' => env('APPLE_CLIENT_SECRET',false),
     'ninja_apple_redirect_url' => env('APPLE_REDIRECT_URI',false),
+    'twilio_account_sid' => env('TWILIO_ACCOUNT_SID',false),
+    'twilio_auth_token' => env('TWILIO_AUTH_TOKEN',false),
+    'twilio_verify_sid' => env('TWILIO_VERIFY_SID',false),
+
 ];

@@ -22,14 +22,17 @@ use App\Models\RecurringInvoiceInvitation;
 use App\Services\PdfMaker\Designs\Utilities\DesignHelpers;
 use App\Utils\Ninja;
 use App\Utils\Number;
+use App\Utils\Traits\AppSetup;
 use App\Utils\Traits\MakesDates;
 use App\Utils\transformTranslations;
 use Exception;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Cache;
 
 class VendorHtmlEngine
 {
     use MakesDates;
+    use AppSetup;
 
     public $entity;
 
@@ -214,10 +217,10 @@ class VendorHtmlEngine
         $data['$entity.public_notes'] = &$data['$public_notes'];
         $data['$notes'] = &$data['$public_notes'];
 
-        $data['$purchase_order.custom1'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'purchase_order1', $this->entity->custom_value1, $this->company) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'purchase_order1')];
-        $data['$purchase_order.custom2'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'purchase_order2', $this->entity->custom_value2, $this->company) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'purchase_order2')];
-        $data['$purchase_order.custom3'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'purchase_order3', $this->entity->custom_value3, $this->company) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'purchase_order3')];
-        $data['$purchase_order.custom4'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'purchase_order4', $this->entity->custom_value4, $this->company) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'purchase_order4')];
+        $data['$purchase_order.custom1'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice1', $this->entity->custom_value1, $this->company) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice1')];
+        $data['$purchase_order.custom2'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice2', $this->entity->custom_value2, $this->company) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice2')];
+        $data['$purchase_order.custom3'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice3', $this->entity->custom_value3, $this->company) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice3')];
+        $data['$purchase_order.custom4'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'invoice4', $this->entity->custom_value4, $this->company) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'invoice4')];
 
         $data['$vendor1'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'vendor1', $this->vendor->custom_value1, $this->company) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'vendor1')];
         $data['$vendor2'] = ['value' => $this->helpers->formatCustomFieldValue($this->company->custom_fields, 'vendor2', $this->vendor->custom_value2, $this->company) ?: '&nbsp;', 'label' => $this->helpers->makeCustomField($this->company->custom_fields, 'vendor2')];
@@ -483,7 +486,27 @@ class VendorHtmlEngine
 
     private function getCountryName() :string
     {
-        $country = Country::find($this->settings->country_id);
+
+        $countries = Cache::get('countries');
+
+        if (! $countries) {
+            $this->buildCache(true);
+
+            $countries = Cache::get('countries');
+
+        }
+
+        if($countries){
+
+         
+            $country = $countries->filter(function ($item) {
+                return $item->id == $this->settings->country_id;
+            })->first();
+
+   
+        }
+        else
+            $country = Country::find($this->settings->country_id);
 
         if ($country) {
             return ctrans('texts.country_' . $country->name);

@@ -64,7 +64,7 @@ class Vendor extends BaseModel
     protected $touches = [];
 
     protected $with = [
-        //    'contacts',
+        'company',
     ];
 
     protected $presenter = VendorPresenter::class;
@@ -172,8 +172,19 @@ class Vendor extends BaseModel
         return $this->company->company_key.'/'.$this->vendor_hash.'/'.$contact_key.'/purchase_orders/';
     }
 
+    public function locale()
+    {
+        return $this->company->locale();
+    }
+
     public function country()
     {
         return $this->belongsTo(Country::class);
     }
+
+    public function date_format()
+    {
+        return $this->company->date_format();
+    }
+
 }

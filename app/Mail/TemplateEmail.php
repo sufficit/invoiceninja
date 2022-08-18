@@ -11,6 +11,7 @@
 
 namespace App\Mail;
 
+use App\Jobs\Entity\CreateEntityPdf;
 use App\Jobs\Invoice\CreateUbl;
 use App\Models\Account;
 use App\Models\Client;
@@ -23,6 +24,7 @@ use App\Utils\TemplateEngine;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Storage;
 
 class TemplateEmail extends Mailable
 {
@@ -113,22 +115,46 @@ class TemplateEmail extends Mailable
                 'company' => $company,
                 'whitelabel' => $this->client->user->account->isPaid() ? true : false,
                 'logo' => $this->company->present()->logo($settings),
-            ])
-            ->withSymfonyMessage(function ($message) use ($company) {
-                $message->getHeaders()->addTextHeader('Tag', $company->company_key);
-                $message->invitation = $this->invitation;
-            });
+            ]);
+            // ->withSymfonyMessage(function ($message) use ($company) {
+            //    $message->getHeaders()->addTextHeader('Tag', $company->company_key);
+            //    $message->invitation = $this->invitation;
+            //});
+            // ->tag($company->company_key);
 
         /*In the hosted platform we need to slow things down a little for Storage to catch up.*/
-        if (Ninja::isHosted()) {
+
+        if(Ninja::isHosted() && $this->invitation){
+
+            $path = false;
+
+            if($this->invitation->invoice)
+                $path = $this->client->invoice_filepath($this->invitation).$this->invitation->invoice->numberFormatter().'.pdf';
+            elseif($this->invitation->quote)
+                $path = $this->client->quote_filepath($this->invitation).$this->invitation->quote->numberFormatter().'.pdf';
+            elseif($this->invitation->credit)
+                $path = $this->client->credit_filepath($this->invitation).$this->invitation->credit->numberFormatter().'.pdf';
+
             sleep(1);
+
+            if($path && !Storage::disk(config('filesystems.default'))->exists($path)){
+
+                sleep(2);
+
+                if(!Storage::disk(config('filesystems.default'))->exists($path)) {
+                    (new CreateEntityPdf($this->invitation))->handle();
+                    sleep(2);
+                }
+
+            }
+
         }
 
         foreach ($this->build_email->getAttachments() as $file) {
             if (is_string($file)) {
                 $this->attach($file);
             } elseif (is_array($file)) {
-                $this->attach($file['path'], ['as' => $file['name'], 'mime' => $file['mime']]);
+                $this->attach($file['path'], ['as' => $file['name'], 'mime' => null]);
             }
         }
 

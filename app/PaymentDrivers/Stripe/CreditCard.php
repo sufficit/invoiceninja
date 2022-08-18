@@ -20,6 +20,7 @@ use App\Models\Payment;
 use App\Models\PaymentType;
 use App\Models\SystemLog;
 use App\PaymentDrivers\StripePaymentDriver;
+use App\PaymentDrivers\Stripe\Jobs\UpdateCustomer;
 use Stripe\PaymentIntent;
 use Stripe\PaymentMethod;
 
@@ -129,6 +130,8 @@ class CreditCard
 
     public function processSuccessfulPayment()
     {
+        UpdateCustomer::dispatch($this->stripe->company_gateway->company->company_key, $this->stripe->company_gateway->id, $this->stripe->client->id);
+
         $stripe_method = $this->stripe->getStripePaymentMethod($this->stripe->payment_hash->data->server_response->payment_method);
 
         $data = [
@@ -163,6 +166,17 @@ class CreditCard
             $this->stripe->client,
             $this->stripe->client->company,
         );
+
+        //If the user has come from a subscription double check here if we need to redirect.
+        //08-08-2022
+        if($payment->invoices()->whereHas('subscription')->exists()){
+            $subscription = $payment->invoices()->first()->subscription;
+
+            if($subscription && array_key_exists('return_url', $subscription->webhook_configuration) && strlen($subscription->webhook_configuration['return_url']) >=1)
+            return redirect($subscription->webhook_configuration['return_url']);
+
+        }
+        //08-08-2022
 
         return redirect()->route('client.payments.show', ['payment' => $this->stripe->encodePrimaryKey($payment->id)]);
     }
