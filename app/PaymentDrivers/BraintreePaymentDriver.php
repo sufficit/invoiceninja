@@ -126,6 +126,17 @@ class BraintreePaymentDriver extends BaseDriver
 
             return $result->customer;
         }
+            //12-08-2022 catch when the customer is not created.
+            $data = [
+                'transaction_reference' => null,
+                'transaction_response' => $result,
+                'success' => false,
+                'description' => 'Could not create customer',
+                'code' => 500,
+            ];
+
+            SystemLogger::dispatch(['server_response' => $result, 'data' => $data], SystemLog::CATEGORY_GATEWAY_RESPONSE, SystemLog::EVENT_GATEWAY_FAILURE, SystemLog::TYPE_BRAINTREE, $this->client, $this->client->company);
+
     }
 
     public function refund(Payment $payment, $amount, $return_client_response = false)
@@ -196,7 +207,7 @@ class BraintreePaymentDriver extends BaseDriver
             'paymentMethodToken' => $cgt->token,
             'deviceData' => '',
             'options' => [
-                'submitForSettlement' => true
+                'submitForSettlement' => true,
             ],
         ]);
 
@@ -224,7 +235,7 @@ class BraintreePaymentDriver extends BaseDriver
             return $payment;
         }
 
-        if (!$result->success) {
+        if (! $result->success) {
             $this->unWindGatewayFees($payment_hash);
 
             $this->sendFailureMail($result->transaction->additionalProcessorResponse);
@@ -249,7 +260,6 @@ class BraintreePaymentDriver extends BaseDriver
 
     public function processWebhookRequest($request)
     {
-
         $validator = Validator::make($request->all(), [
             'bt_signature' => ['required'],
             'bt_payload' => ['required'],
@@ -262,21 +272,18 @@ class BraintreePaymentDriver extends BaseDriver
         $this->init();
 
         $webhookNotification = $this->gateway->webhookNotification()->parse(
-            $request->input("bt_signature"), $request->input("bt_payload")
+            $request->input('bt_signature'), $request->input('bt_payload')
         );
 
-        nlog("braintree webhook");
+        nlog('braintree webhook');
 
         // if($webhookNotification)
         //     nlog($webhookNotification->kind);
-        
+
         // // Example values for webhook notification properties
         // $message = $webhookNotification->kind; // "subscription_went_past_due"
         // $message = $webhookNotification->timestamp->format('D M j G:i:s T Y'); // "Sun Jan 1 00:00:00 UTC 2012"
 
         return response()->json([], 200);
-
     }
-
-
 }

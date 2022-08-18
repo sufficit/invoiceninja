@@ -15,7 +15,8 @@
 
 <issueHandlers>
   <MissingPropertyType errorLevel="suppress" />
-
+  <TypeDoesNotContainNull errorLevel="suppress" />
+  <TypeDoesNotContainType errorLevel="suppress" />
   <UndefinedFunction>
     <errorLevel type="suppress">
       <directory name="app" /> 
@@ -56,6 +57,16 @@
       <directory name="app" /> 
     </errorLevel>
   </UndefinedMagicPropertyFetch> 
+  <TooManyArguments>
+    <errorLevel type="suppress">
+      <directory name="app" /> 
+    </errorLevel>
+  </TooManyArguments>
+  <RedundantCast>
+    <errorLevel type="suppress">
+      <directory name="app" /> 
+    </errorLevel>
+  </RedundantCast>
   <InvalidNullableReturnType>
     <errorLevel type="suppress">
       <directory name="app" /> 

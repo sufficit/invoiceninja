@@ -6,8 +6,9 @@
  *
  * @copyright Copyright (c) 2021. Invoice Ninja LLC (https://invoiceninja.com)
  *
- * @license https://www.elastic.co/licensing/elastic-license 
+ * @license https://www.elastic.co/licensing/elastic-license
  */
+
 namespace Tests\Unit;
 
 use App\Models\Currency;
@@ -20,6 +21,53 @@ use Tests\TestCase;
  */
 class NumberTest extends TestCase
 {
+
+    public function testFloatPrecision()
+    {
+        $value = 1.1;
+
+        $precision = (int) strpos(strrev($value), ".");
+
+        $result =  round($value, $precision);
+
+        $this->assertEquals(1.1, $result);
+    }
+
+
+    public function testFloatPrecision1()
+    {
+        $value = "1.1";
+
+        $precision = (int) strpos(strrev($value), ".");
+
+        $result =  round($value, $precision);
+
+        $this->assertEquals(1.1, $result);
+    }
+
+
+    public function testFloatPrecision2()
+    {
+        $value = 9.975;
+
+        $precision = (int) strpos(strrev($value), ".");
+
+        $result =  round($value, $precision);
+
+        $this->assertEquals(9.975, $result);
+    }
+
+    public function testFloatPrecision3()
+    {
+        $value = "9.975";
+
+        $precision = (int) strpos(strrev($value), ".");
+
+        $result =  round($value, $precision);
+
+        $this->assertEquals(9.975, $result);
+    }
+
     public function testRoundingThreeLow()
     {
         $rounded = Number::roundValue(3.144444444444, 3);
@@ -44,7 +92,7 @@ class NumberTest extends TestCase
     //this method proved an error! removing this method from production
     // public function testImportFloatConversion()
     // {
-        
+
     //     $amount = '€7,99';
 
     //     $converted_amount = Number::parseStringFloat($amount);
@@ -96,7 +144,7 @@ class NumberTest extends TestCase
         $x = Number::formatValueNoTrailingZeroes(0.00005, $currency);
 
         $this->assertEquals(0.00005, $x);
-    }    
+    }
 
     public function testRoundingDecimalsSix()
     {
@@ -123,8 +171,7 @@ class NumberTest extends TestCase
         $x = Number::formatValueNoTrailingZeroes(0.00000005, $currency);
 
         $this->assertEquals(0.00000005, $x);
-    }    
-
+    }
 
     public function testRoundingPositive()
     {
@@ -144,5 +191,5 @@ class NumberTest extends TestCase
 
         $x = Number::formatValueNoTrailingZeroes(1.50000005, $currency);
         $this->assertEquals(1.50000005, $x);
-    }  
+    }
 }

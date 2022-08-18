@@ -30,8 +30,8 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Mail;
 
 /*Multi Mailer implemented*/
 
@@ -41,7 +41,7 @@ class PaymentFailedMailer implements ShouldQueue
 
     public ?PaymentHash $payment_hash;
 
-    public string $error;
+    public $error;
 
     public Company $company;
 
@@ -55,14 +55,12 @@ class PaymentFailedMailer implements ShouldQueue
      * @param $company
      * @param $amount
      */
-    public function __construct(?PaymentHash $payment_hash, Company $company, Client $client, string $error)
+    public function __construct(?PaymentHash $payment_hash, Company $company, Client $client, $error)
     {
-
         $this->payment_hash = $payment_hash;
         $this->client = $client;
         $this->error = $error;
         $this->company = $company;
-
     }
 
     /**
@@ -72,23 +70,26 @@ class PaymentFailedMailer implements ShouldQueue
      */
     public function handle()
     {
+        if(!is_string($this->error)){
+            $this->error = "Payment failed, no reason given.";
+        }
+
         //Set DB
         MultiDB::setDb($this->company->db);
         App::setLocale($this->client->locale());
-        
+
         $settings = $this->client->getMergedSettings();
 
         $amount = 0;
         $invoice = false;
 
-        if($this->payment_hash){
+        if ($this->payment_hash) {
             $amount = array_sum(array_column($this->payment_hash->invoices(), 'amount')) + $this->payment_hash->fee_total;
             $invoice = Invoice::whereIn('id', $this->transformKeys(array_column($this->payment_hash->invoices(), 'invoice_id')))->withTrashed()->first();
         }
 
         //iterate through company_users
-        $this->company->company_users->each(function ($company_user) use($amount, $settings, $invoice){        
-
+        $this->company->company_users->each(function ($company_user) use ($amount, $settings, $invoice) {
             $methods = $this->findUserEntityNotificationType($invoice ?: $this->client, $company_user, ['payment_failure_user', 'payment_failure_all', 'payment_failure', 'all_notifications']);
 
             //if mail is a method type -fire mail!!
@@ -104,16 +105,14 @@ class PaymentFailedMailer implements ShouldQueue
                 $nmo->settings = $settings;
 
                 NinjaMailerJob::dispatch($nmo);
-
             }
         });
 
         //add client payment failures here.
         //
-        if($this->client->contacts()->whereNotNull('email')->exists() && $this->payment_hash)
-        {
+        if ($this->client->contacts()->whereNotNull('email')->exists() && $this->payment_hash) {
             $contact = $this->client->contacts()->whereNotNull('email')->first();
-            
+
             $mail_obj = (new ClientPaymentFailureObject($this->client, $this->error, $this->company, $this->payment_hash))->build();
 
             $nmo = new NinjaMailerObject;
@@ -123,11 +122,6 @@ class PaymentFailedMailer implements ShouldQueue
             $nmo->settings = $settings;
 
             NinjaMailerJob::dispatch($nmo);
-            
         }
-        
     }
-
-
-
 }
